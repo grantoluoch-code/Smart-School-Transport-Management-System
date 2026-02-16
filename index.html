@@ -1,0 +1,525 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart School Transport Management System - Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    
+    <script type="text/javascript" src="http://me.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=2sOCmYcHK5hAAXAaUvR5_S5hBOQpCqQKtuscnFM26cnkZkZAidALPDqVz9TVbDMpKJkzXglpHpIsDKxbOupO2g" charset="UTF-8"></script><style>
+        :root {
+            --primary: #0d47a1;
+            --secondary: #1565c0;
+            --accent: #00c853;
+            --light: #f4f6f9;
+            --dark: #263238;
+            --danger: #d32f2f;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); scroll-behavior: smooth; overflow-x: hidden; }
+        
+        /* NAVIGATION BAR */
+        .main-nav { background: white; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 3000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .main-nav .logo { font-size: 24px; font-weight: bold; color: var(--primary); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .nav-links a { text-decoration: none; color: var(--dark); margin-left: 20px; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        .nav-links a:hover { color: var(--primary); }
+        .portal-btn { background: var(--primary); color: white !important; padding: 8px 20px; border-radius: 20px; }
+        
+        /* MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 30px; width: 90%; max-width: 500px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card h2 { color: var(--primary); margin-top: 0; }
+        .modal-card ul { padding-left: 20px; color: #444; }
+        .modal-card li { margin-bottom: 10px; }
+
+        /* LANDING SECTIONS */
+        section { padding: 80px 5%; min-height: 60vh; }
+        .hero { background: linear-gradient(rgba(13, 71, 161, 0.8), rgba(21, 101, 192, 0.8)), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80') center/cover; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .hero h1 { font-size: 48px; margin-bottom: 15px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+
+        /* PORTAL & DASHBOARD */
+        #portalArea { display: none; }
+        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
+        .login-box { background: white; padding: 30px; border-radius: 10px; width: 340px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .login-box input, .login-box select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .toggle-link { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
+        
+        .dashboard { display: grid; grid-template-columns: 260px 1fr; min-height: 90vh; }
+        .sidebar { background: var(--primary); color: white; padding: 20px; }
+        .sidebar button { display: block; width: 100%; margin: 10px 0; padding: 12px; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; border-radius: 6px; text-align: left; transition: 0.3s; }
+        .sidebar button:hover { background: rgba(255,255,255,0.3); transform: translateX(5px); }
+        
+        .content { padding: 30px; background: #f4f6f9; }
+        button.primary { background: var(--accent); border: none; padding: 12px; color: white; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
+        button.primary:hover { opacity: 0.9; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; color: var(--primary); }
+
+        #map { height: 500px; border-radius: 12px; margin-top: 10px; z-index: 1; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* RECEIPT MODAL */
+        .receipt-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 6000; justify-content: center; align-items: center; }
+        .receipt-card { background: white; padding: 30px; width: 380px; border-radius: 8px; position: relative; }
+        .receipt-header { text-align: center; border-bottom: 2px dashed #ddd; margin-bottom: 15px; padding-bottom: 10px; }
+        .receipt-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 14px; }
+        
+        /* AI ASSISTANT */
+        #ai-assistant { position: fixed; bottom: 20px; right: 20px; z-index: 5000; }
+        #chat-toggle { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 24px; }
+        #chat-window { width: 300px; height: 400px; background: white; position: absolute; bottom: 80px; right: 0; border-radius: 12px; display: none; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+        #chat-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; }
+        #chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .bot-msg { background: #e3f2fd; padding: 8px; border-radius: 8px; align-self: flex-start; }
+        
+        @media(max-width:768px) { .dashboard { grid-template-columns: 1fr; } .sidebar { display: none; } }
+        
+        @media print { 
+            body * { visibility: hidden; } 
+            .receipt-card, .receipt-card * { visibility: visible; }
+            .receipt-card { position: fixed; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="main-nav no-print">
+    <div class="logo" onclick="location.reload()">🚌 SmartTransport Pro</div>
+    <div class="nav-links">
+        <a onclick="location.reload()">Home</a>
+        <a onclick="openAbout()">About</a>
+        <a onclick="openContact()">Contact</a>
+        <a onclick="switchToPortal()" class="portal-btn">Login / Portal</a>
+    </div>
+</nav>
+
+<div id="aboutModal" class="modal-overlay">
+    <div class="modal-card">
+        <h2>About SmartTransport Pro</h2>
+        <p>SmartTransport Pro is an advanced management system designed to streamline school logistics. Our platform ensures:</p>
+        <ul>
+            <li><strong>Live Tracking:</strong> Real-time GPS monitoring of bus routes.</li>
+            <li><strong>Safe Registration:</strong> Easy student enrollment for transport services.</li>
+            <li><strong>Instant Billing:</strong> Automated receipt generation and M-Pesa integration.</li>
+            <li><strong>Admin Control:</strong> Comprehensive dashboards for school administrators to manage fleets.</li>
+        </ul>
+        <button class="primary" onclick="closeAbout()">Got it!</button>
+    </div>
+</div>
+
+<div id="contactModal" class="modal-overlay">
+    <div class="modal-card">
+        <h2>Contact Us</h2>
+        <p>Have a question or need technical support? Send us a message.</p>
+        <form id="contactForm" onsubmit="handleContact(event)">
+            <input type="text" id="contactName" placeholder="Your Full Name" required style="width:100%; padding:12px; margin:10px 0; border-radius:6px; border:1px solid #ccc; box-sizing: border-box;">
+            <textarea id="contactMessage" placeholder="How can we help you?" required style="width:100%; padding:12px; margin:10px 0; border-radius:6px; border:1px solid #ccc; box-sizing: border-box; height: 100px; font-family: inherit;"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="primary">Send Email</button>
+                <button type="button" onclick="closeContact()" style="flex: 1; border: none; background: #eee; border-radius: 6px; cursor: pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="receiptOverlay" class="receipt-overlay">
+    <div class="receipt-card">
+        <div class="receipt-header">
+            <h2 id="receiptSchoolName" style="color: var(--primary); margin: 0;">SmartTransport Pro</h2>
+            <p style="font-size: 12px; color: #666;">Official Booking Receipt</p>
+        </div>
+        <div id="receiptBody"></div>
+        <div style="margin-top: 20px; display: flex; gap: 10px;" class="no-print">
+            <button class="primary" onclick="window.print()">Print Receipt</button>
+            <button onclick="closeReceipt()" style="flex: 1; border: none; background: #eee; border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="landingArea">
+    <section class="hero">
+        <h1>Safety First. Reliability Always.</h1>
+        <p>Smart route management and live tracking for the modern school.</p>
+        <button onclick="switchToPortal()" style="padding: 15px 40px; background: var(--accent); border: none; color: white; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px;">Access Portal</button>
+    </section>
+</div>
+
+<div id="portalArea">
+    <div id="loginScreen">
+        <div class="login-box">
+            <h2 id="authTitle">Portal Login</h2>
+            
+            <div id="regFields" style="display:none;">
+                <label style="font-size: 11px; color: #666; display: block; text-align: left;">School Name:</label>
+                <input type="text" id="regSchool" placeholder="e.g. Hillcrest Academy">
+                
+                <label style="font-size: 11px; color: #666; display: block; text-align: left;">Account Type:</label>
+                <select id="regRole">
+                    <option value="parent">Parent</option>
+                    <option value="admin">School Admin</option>
+                </select>
+            </div>
+
+            <input type="text" id="username" placeholder="Username (demo: admin)">
+            <input type="password" id="password" placeholder="Password (demo: 123)">
+            
+            <button class="primary" id="authBtn" onclick="handleAuth()">Login to Dashboard</button>
+            
+            <p style="font-size: 13px; color: #666; margin-top: 15px;">
+                <span id="toggleMsg">Don't have an account?</span> 
+                <span class="toggle-link" id="toggleAction" onclick="toggleAuth()">Sign Up</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="app" style="display:none;">
+        <header style="background: var(--primary); color: white; padding: 15px; text-align: center;">
+            <h2 id="welcomeUser" style="margin:0;">Dashboard</h2>
+        </header>
+        
+        <div class="dashboard">
+            <aside class="sidebar no-print" id="sidebarMenu"></aside>
+
+            <main class="content">
+                <div id="bookingTab" class="tab-content">
+                    <div class="card">
+                        <h2>🚌 Student Route Registration</h2>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                            <input type="text" id="sID" placeholder="Admission Number">
+                            <input type="text" id="sName" placeholder="Student Full Name">
+                            <input type="text" id="sPickup" placeholder="Pick-up Point (e.g. Westlands, Nairobi)">
+                            <input type="text" id="sDestination" placeholder="Drop-off Point (e.g. School Location)">
+                            <input type="number" id="sAmount" value="5000" title="Transport Fee">
+                        </div>
+                        <button class="primary" onclick="saveBooking()" style="margin-top:20px;">Save & Generate Receipt</button>
+                    </div>
+                </div>
+
+                <div id="mapTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>📍 Live Route Generator</h3>
+                        <p id="routeDetails">Register a student to generate a map route.</p>
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <div id="adminTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <div style="display:flex; justify-content: space-between;">
+                            <h2 id="adminTitle">📋 School Transport List</h2>
+                            <button onclick="clearAll()" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Clear All</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr><th>Adm No.</th><th>Name</th><th>Route</th><th>Fee</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="adminTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="payTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>💳 M-Pesa Payment Portal</h3>
+                        <p>Direct payment for the current school term.</p>
+                        <input type="text" id="payPhone" placeholder="07XXXXXXXX" style="width:100%; padding:10px; margin:10px 0;">
+                        <button class="primary" style="background:#2e7d32;" onclick="alert('STK Push Sent to your phone!')">Pay Transport Fee</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+
+<div id="ai-assistant" class="no-print">
+    <div id="chat-window">
+        <div id="chat-header">ScholarBot Support</div>
+        <div id="chat-messages">
+            <div class="bot-msg">Welcome! How can I help with your school transport today?</div>
+        </div>
+        <div style="padding:10px; border-top:1px solid #eee;">
+            <input type="text" id="chatInput" placeholder="Ask about routes..." style="width:70%; padding:5px;">
+            <button onclick="sendMessage()" style="padding:5px;">Send</button>
+        </div>
+    </div>
+    <button id="chat-toggle" onclick="toggleChat()">🤖</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    let isSignUpMode = false;
+    let currentUser = null;
+    let map = null;
+    let routingControl = null;
+        
+    let users = JSON.parse(localStorage.getItem("transport_users")) || { 
+          admin: { password: "123", role: "admin", school: "Demo Academy" }
+    };
+    let bookings = JSON.parse(localStorage.getItem("school_bookings")) || [];
+
+    // ABOUT MODAL FUNCTIONS
+    function openAbout() {
+        document.getElementById('aboutModal').style.display = 'flex';
+    }
+    function closeAbout() {
+        document.getElementById('aboutModal').style.display = 'none';
+    }
+
+    // CONTACT MODAL FUNCTIONS
+    function openContact() {
+        document.getElementById('contactModal').style.display = 'flex';
+    }
+    function closeContact() {
+        document.getElementById('contactModal').style.display = 'none';
+    }
+    function handleContact(e) {
+        e.preventDefault();
+        const name = document.getElementById('contactName').value;
+        const msg = document.getElementById('contactMessage').value;
+        const email = "support@smarttransportpro.com"; // Replace with actual email
+        window.location.href = `mailto:${email}?subject=Support Request from ${name}&body=${encodeURIComponent(msg)}`;
+        alert("Your email app is opening...");
+        closeContact();
+    }
+
+    function switchToPortal() {
+        document.getElementById('landingArea').style.display = 'none';
+        document.getElementById('portalArea').style.display = 'block';
+    }
+
+    function toggleAuth() {
+        isSignUpMode = !isSignUpMode;
+        document.getElementById('authTitle').innerText = isSignUpMode ? "Create Account" : "Portal Login";
+        document.getElementById('authBtn').innerText = isSignUpMode ? "Sign Up" : "Login to Dashboard";
+        document.getElementById('toggleMsg').innerText = isSignUpMode ? "Already have an account?" : "Don't have an account?";
+        document.getElementById('toggleAction').innerText = isSignUpMode ? "Login" : "Sign Up";
+        document.getElementById('regFields').style.display = isSignUpMode ? "block" : "none";
+    }
+
+    function handleAuth() {
+        const u = document.getElementById('username').value.trim();
+        const p = document.getElementById('password').value.trim();
+                
+        if(isSignUpMode) {
+            const s = document.getElementById('regSchool').value.trim();
+            const r = document.getElementById('regRole').value;
+            if(!u || !p || !s) return alert("Please fill all fields!");
+                        
+            users[u] = { password: p, role: r, school: s };
+            localStorage.setItem("transport_users", JSON.stringify(users));
+            alert("Account created! Logging you in...");
+            loginUser(u, r, s);
+        } else {
+            if(users[u] && users[u].password === p) {
+                loginUser(u, users[u].role, users[u].school || "General School");
+            } else {
+                alert("Invalid credentials. Try 'admin' / '123'");
+            }
+        }
+    }
+
+    function loginUser(name, role, school) {
+        currentUser = { name, role, school };
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('welcomeUser').innerText = `${school} Dashboard`;
+        document.getElementById('adminTitle').innerText = `📋 Transport List: ${school}`;
+                
+        setupSidebar();
+        showTab(role === 'admin' ? 'adminTab' : 'bookingTab');
+        refreshAdminTable();
+    }
+
+    function setupSidebar() {
+        const menu = document.getElementById('sidebarMenu');
+        let html = '';
+
+        if(currentUser.role === 'admin') {
+            html = `
+                <button onclick="showTab('adminTab')">📋 Admin Records</button>
+                <button onclick="showTab('mapTab')">📍 Live Tracking</button>
+            `;
+        } else {
+            html = `
+                <button onclick="showTab('bookingTab')">🚌 New Booking</button>
+                <button onclick="showTab('mapTab')">📍 Live Tracking</button>
+                <button onclick="showTab('payTab')">💳 Payments</button>
+            `;
+        }
+        
+        html += `<button onclick="location.reload()" style="background:var(--danger); margin-top:20px;">Logout</button>`;
+        menu.innerHTML = html;
+    }
+
+    function showTab(tabId) {
+        if(currentUser.role === 'admin' && (tabId === 'bookingTab' || tabId === 'payTab')) {
+            tabId = 'adminTab';
+        }
+
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+        document.getElementById(tabId).style.display = 'block';
+        if(tabId === 'mapTab') setTimeout(initMap, 300);
+    }
+
+    function saveBooking() {
+        const refNo = "ST-" + Math.floor(Math.random() * 89999 + 10000);
+        const newBooking = {
+            school: currentUser.school,
+            ref: refNo,
+            id: document.getElementById('sID').value,
+            name: document.getElementById('sName').value,
+            pickup: document.getElementById('sPickup').value,
+            dest: document.getElementById('sDestination').value,
+            amount: document.getElementById('sAmount').value,
+            date: new Date().toLocaleString()
+        };
+
+        if(!newBooking.id || !newBooking.name) return alert("Please fill student details!");
+                
+        bookings.push(newBooking);
+        localStorage.setItem("school_bookings", JSON.stringify(bookings));
+        localStorage.setItem("last_active_booking", JSON.stringify(newBooking));
+                
+        refreshAdminTable();
+        showReceipt(refNo);
+    }
+
+    function showReceipt(ref) {
+        const b = bookings.find(item => item.ref === ref);
+        if(!b) return;
+
+        document.getElementById('receiptSchoolName').innerText = b.school;
+        const body = `
+            <div class="receipt-row"><strong>Ref No:</strong> <span>${b.ref}</span></div>
+            <div class="receipt-row"><strong>Date:</strong> <span>${b.date}</span></div>
+            <hr style="border: 0; border-top: 1px solid #eee;">
+            <div class="receipt-row"><strong>Student:</strong> <span>${b.name}</span></div>
+            <div class="receipt-row"><strong>Adm No:</strong> <span>${b.id}</span></div>
+            <div class="receipt-row"><strong>Route:</strong> <span style="text-align: right; max-width: 60%;">${b.pickup} to ${b.dest}</span></div>
+            <div class="receipt-row" style="margin-top: 15px; font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px;">
+                <strong>Amount:</strong> <span>KES ${b.amount}</span>
+            </div>
+            <p style="text-align: center; font-size: 10px; margin-top: 15px; color: #888;">Verified by ${b.school} Transport Dept.</p>
+        `;
+        document.getElementById('receiptBody').innerHTML = body;
+        document.getElementById('receiptOverlay').style.display = 'flex';
+    }
+
+    function closeReceipt() {
+        document.getElementById('receiptOverlay').style.display = 'none';
+    }
+
+    function refreshAdminTable() {
+        const body = document.getElementById('adminTableBody');
+        const schoolData = bookings.filter(b => b.school === currentUser.school);
+                
+        body.innerHTML = schoolData.map(b => `
+            <tr>
+                <td>${b.id}</td>
+                <td>${b.name}</td>
+                <td>${b.pickup} → ${b.dest}</td>
+                <td>KES ${b.amount}</td>
+                <td><button onclick="showReceipt('${b.ref}')" style="background:var(--primary); color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">View</button></td>
+            </tr>
+        `).join('');
+    }
+
+    async function geocode(address) {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+            const data = await res.json();
+            return data.length > 0 ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null;
+        } catch (e) { return null; }
+    }
+
+    async function initMap() {
+        if (!map) {
+            map = L.map('map').setView([-1.286, 36.817], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        }
+        const b = JSON.parse(localStorage.getItem("last_active_booking"));
+        if(!b) return;
+        document.getElementById('routeDetails').innerText = `Live Route: ${b.pickup} to ${b.dest}`;
+        const start = await geocode(b.pickup);
+        const end = await geocode(b.dest);
+        if(!start || !end) return;
+        if (routingControl) map.removeControl(routingControl);
+        routingControl = L.Routing.control({
+            waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            lineOptions: { styles: [{ color: '#0d47a1', weight: 6 }] }
+        }).addTo(map);
+    }
+
+    function toggleChat() {
+        const win = document.getElementById('chat-window');
+        win.style.display = win.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        if(!input.value) return;
+        const msgArea = document.getElementById('chat-messages');
+        msgArea.innerHTML += `<div style="align-self:flex-end; background:var(--primary); color:white; padding:8px; border-radius:8px;">${input.value}</div>`;
+        setTimeout(() => {
+            msgArea.innerHTML += `<div class="bot-msg">I'm ScholarBot. You can reach the ${currentUser.school} transport office for immediate help.</div>`;
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }, 800);
+        input.value = "";
+    }
+
+    function clearAll() {
+        if(confirm(`Delete all transport records for ${currentUser.school}?`)) {
+            bookings = bookings.filter(b => b.school !== currentUser.school);
+            localStorage.setItem("school_bookings", JSON.stringify(bookings));
+            refreshAdminTable();
+        }
+    }
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>
